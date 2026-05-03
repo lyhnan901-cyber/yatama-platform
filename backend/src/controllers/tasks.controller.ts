@@ -24,7 +24,7 @@ export const createTask = async (req: Request, res: Response): Promise<void> => 
         title, description,
         projectId: projectId ? Number(projectId) : null,
         assignedTo: assignedTo ? Number(assignedTo) : null,
-        assignedBy: (req as any).user?.id || 1,
+        assignedBy: (req as any).user?.id,
         priority: priority || 'medium',
         dueDate: dueDate ? new Date(dueDate) : null
       }

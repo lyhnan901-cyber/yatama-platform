@@ -20,6 +20,16 @@ export const getTransactions = async (req: Request, res: Response): Promise<void
 export const createTransaction = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { type, amount, category, description, projectId, transDate } = req.body;
+
+    if (!amount || Number(amount) <= 0) {
+      res.status(400).json({ success: false, message: 'المبلغ يجب أن يكون أكبر من صفر' });
+      return;
+    }
+    if (!type || !['income', 'expense'].includes(type)) {
+      res.status(400).json({ success: false, message: 'نوع المعاملة يجب أن يكون income أو expense' });
+      return;
+    }
+
     const trans = await prisma.financialTransaction.create({
       data: {
         type, amount: Number(amount), category, description,

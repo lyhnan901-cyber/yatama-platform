@@ -55,9 +55,6 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       data: { lastLogin: new Date() },
     });
 
-    // استخراج الصلاحيات
-    const permissions = user.role.permissions.map(rp => rp.permission.slug);
-
     res.status(200).json({
       success: true,
       message: `مرحباً ${user.fullName} 👋`,
@@ -69,9 +66,12 @@ export const login = async (req: Request, res: Response): Promise<void> => {
           email:       user.email,
           phone:       user.phone,
           avatarUrl:   user.avatarUrl,
-          role:        user.role.slug,
-          roleName:    user.role.name,
-          permissions,
+          role: {
+            id:          user.role.id,
+            name:        user.role.name,
+            slug:        user.role.slug,
+            permissions: user.role.permissions,
+          },
         },
       },
     });

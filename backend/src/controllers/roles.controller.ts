@@ -40,25 +40,26 @@ export const updateRole = async (req: Request, res: Response): Promise<void> => 
     const { name, permissionIds } = req.body;
     const slug = name ? name.toLowerCase().replace(/\s+/g, '_') : undefined;
 
-    // Clear existing role-permission links then recreate
-    if (permissionIds) {
-      await prisma.rolePermission.deleteMany({ where: { roleId: Number(id) } });
-    }
+    const role = await prisma.$transaction(async (tx) => {
+      if (permissionIds) {
+        await tx.rolePermission.deleteMany({ where: { roleId: Number(id) } });
+      }
 
-    const role = await prisma.role.update({
-      where: { id: Number(id) },
-      data: {
-        ...(name && { name }),
-        ...(slug && { slug }),
-        ...(permissionIds && {
-          permissions: {
-            create: (permissionIds as number[]).map((pid) => ({
-              permissionId: pid,
-            })),
-          },
-        }),
-      },
-      include: { permissions: { include: { permission: true } } },
+      return tx.role.update({
+        where: { id: Number(id) },
+        data: {
+          ...(name && { name }),
+          ...(slug && { slug }),
+          ...(permissionIds && {
+            permissions: {
+              create: (permissionIds as number[]).map((pid: number) => ({
+                permissionId: pid,
+              })),
+            },
+          }),
+        },
+        include: { permissions: { include: { permission: true } } },
+      });
     });
     res.json({ success: true, data: role });
   } catch (err) {
