@@ -1,15 +1,33 @@
 import { Router, Request, Response } from 'express';
+import Stripe from 'stripe';
 import prisma from '../config/database';
 
 const router = Router();
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', { apiVersion: '2024-12-18.acacia' });
 
-// Stripe webhook — update donation status when payment succeeds
+// Stripe webhook — verify signature + update donation status
 router.post('/stripe', async (req: Request, res: Response) => {
-  try {
-    const event = req.body;
+  const sig = req.headers['stripe-signature'] as string | undefined;
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
+  let event: Stripe.Event;
+
+  try {
+    if (webhookSecret && sig) {
+      event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
+    } else {
+      // Fallback for development without signature verification
+      const body = Buffer.isBuffer(req.body) ? JSON.parse(req.body.toString()) : req.body;
+      event = body as Stripe.Event;
+    }
+  } catch (err) {
+    res.status(400).json({ error: 'Webhook signature verification failed' });
+    return;
+  }
+
+  try {
     if (event.type === 'payment_intent.succeeded') {
-      const paymentIntent = event.data.object;
+      const paymentIntent = event.data.object as Stripe.PaymentIntent;
       const receiptNumber = paymentIntent.metadata?.receiptNumber;
 
       if (receiptNumber) {

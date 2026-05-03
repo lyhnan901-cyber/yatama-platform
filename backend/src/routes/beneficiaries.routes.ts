@@ -5,7 +5,7 @@ import { authenticate, authorize } from '../middleware/auth.middleware';
 const router = Router();
 
 // يمكن لمشرف النظام، مدير المشاريع، ومسؤول الحالات التعامل مع المستفيدين
-const allowedRoles = ['super_admin', 'project_manager', 'case_worker'];
+const allowedRoles = ['super_admin', 'project_manager', 'field_staff'];
 
 // قائمة المستفيدين
 router.get('/', authenticate, authorize(...allowedRoles), getBeneficiaries);
