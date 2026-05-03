@@ -39,7 +39,7 @@ export const updateVolunteer = async (req: Request, res: Response): Promise<void
     const { skills, availability, totalHours, isActive, notes } = req.body;
     const vol = await prisma.volunteer.update({
       where: { id: Number(id) },
-      data: { skills, availability, totalHours: Number(totalHours), isActive, notes },
+      data: { skills, availability, totalHours: totalHours !== undefined ? Number(totalHours) : undefined, isActive, notes },
     });
     res.json({ success: true, message: 'تم تحديث بيانات المتطوع', data: vol });
   } catch (err) {

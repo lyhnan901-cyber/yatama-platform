@@ -51,9 +51,9 @@ export const updateBeneficiary = async (req: AuthRequest, res: Response): Promis
         ...(dateOfBirth  && { dateOfBirth: new Date(dateOfBirth) }),
         ...(gender       && { gender }),
         ...(governorate  && { governorate }),
-        guardianName:  guardianName  || null,
-        guardianPhone: guardianPhone || null,
-        notes:         notes         || null,
+        ...(guardianName  !== undefined && { guardianName:  guardianName  || null }),
+        ...(guardianPhone !== undefined && { guardianPhone: guardianPhone || null }),
+        ...(notes         !== undefined && { notes:         notes         || null }),
       },
     });
     res.json({ success: true, message: 'تم تحديث البيانات بنجاح', data: b });

@@ -41,7 +41,7 @@ export const updateEmployee = async (req: Request, res: Response): Promise<void>
     const { position, department, salary, contractType, isActive } = req.body;
     const emp = await prisma.employee.update({
       where: { id: Number(id) },
-      data: { position, department, salary: Number(salary), contractType, isActive },
+      data: { position, department, salary: salary !== undefined ? Number(salary) : undefined, contractType, isActive },
     });
     res.json({ success: true, message: 'تم تحديث بيانات الموظف', data: emp });
   } catch (err) {

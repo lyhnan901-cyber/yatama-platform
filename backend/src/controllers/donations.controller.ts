@@ -43,19 +43,8 @@ export const createDonation = async (req: Request, res: Response): Promise<void>
       },
     });
 
-    // تحديث إجمالي المتبرع
-    await prisma.donor.update({
-      where: { id: donor.id },
-      data:  { totalDonated: { increment: Number(amount) } },
-    });
-
-    // تحديث المبلغ الحالي للمشروع إن وُجد
-    if (projectId) {
-      await prisma.project.update({
-        where: { id: Number(projectId) },
-        data:  { currentAmount: { increment: Number(amount) } },
-      });
-    }
+    // Note: donor.totalDonated and project.currentAmount are only incremented
+    // when the donation status transitions to 'completed' (e.g. via webhook)
 
     res.status(201).json({
       success: true,

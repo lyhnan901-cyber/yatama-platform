@@ -40,7 +40,7 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'yatama-auth',
-      partialize: (state) => ({ user: state.user, token: state.token }),
+      partialize: (state) => ({ user: state.user, token: state.token, isAuthenticated: state.isAuthenticated }),
     }
   )
 );

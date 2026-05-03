@@ -3,7 +3,9 @@ import prisma from '../config/database';
 
 export const getRoles = async (req: Request, res: Response): Promise<void> => {
   try {
-    const roles = await prisma.role.findMany({ include: { permissions: true } });
+    const roles = await prisma.role.findMany({
+      include: { permissions: { include: { permission: true } } },
+    });
     res.json({ success: true, data: roles });
   } catch (err) {
     res.status(500).json({ success: false, message: 'خطأ في جلب الأدوار' });
@@ -12,20 +14,19 @@ export const getRoles = async (req: Request, res: Response): Promise<void> => {
 
 export const createRole = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { name, permissions } = req.body;
-    // permissions is an array of permission names to attach
+    const { name, permissionIds } = req.body;
     const slug = name.toLowerCase().replace(/\s+/g, '_');
     const role = await prisma.role.create({
       data: {
         name,
         slug,
         permissions: {
-          connectOrCreate: permissions.map((p: string) => ({
-            where: { name: p },
-            create: { name: p, description: p }
-          }))
-        }
-      }
+          create: (permissionIds as number[])?.map((pid) => ({
+            permissionId: pid,
+          })) ?? [],
+        },
+      },
+      include: { permissions: { include: { permission: true } } },
     });
     res.status(201).json({ success: true, data: role });
   } catch (err) {
@@ -36,21 +37,28 @@ export const createRole = async (req: Request, res: Response): Promise<void> => 
 export const updateRole = async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
-    const { name, permissions } = req.body;
+    const { name, permissionIds } = req.body;
     const slug = name ? name.toLowerCase().replace(/\s+/g, '_') : undefined;
+
+    // Clear existing role-permission links then recreate
+    if (permissionIds) {
+      await prisma.rolePermission.deleteMany({ where: { roleId: Number(id) } });
+    }
+
     const role = await prisma.role.update({
       where: { id: Number(id) },
       data: {
-        name,
+        ...(name && { name }),
         ...(slug && { slug }),
-        permissions: {
-          set: [], // clear existing
-          connectOrCreate: permissions?.map((p: string) => ({
-            where: { name: p },
-            create: { name: p, description: p }
-          })) || []
-        }
-      }
+        ...(permissionIds && {
+          permissions: {
+            create: (permissionIds as number[]).map((pid) => ({
+              permissionId: pid,
+            })),
+          },
+        }),
+      },
+      include: { permissions: { include: { permission: true } } },
     });
     res.json({ success: true, data: role });
   } catch (err) {
