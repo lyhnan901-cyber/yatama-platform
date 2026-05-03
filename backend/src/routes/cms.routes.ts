@@ -3,12 +3,12 @@ import { createStory, updateStory, deleteStory, togglePublishStory } from '../co
 import { createNews, updateNews, deleteNews } from '../controllers/news.controller';
 import { createPartner, updatePartner, deletePartner } from '../controllers/partners.controller';
 import { uploadTransparencyReport, updateTransparencyReport, deleteTransparencyReport } from '../controllers/transparency.controller';
-import { authenticate } from '../middleware/auth.middleware';
+import { authenticate, authorize } from '../middleware/auth.middleware';
 
 const router = Router();
 
-// Protect all CMS routes
-router.use(authenticate);
+// Protect all CMS routes — only super_admin and project_manager can modify content
+router.use(authenticate, authorize('super_admin', 'project_manager'));
 
 router.post('/stories', createStory);
 router.put('/stories/:id', updateStory);

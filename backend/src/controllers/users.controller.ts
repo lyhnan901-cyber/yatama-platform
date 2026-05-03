@@ -24,8 +24,8 @@ export const getUsers = async (req: AuthRequest, res: Response): Promise<void> =
 export const createUser = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { fullName, email, phone, roleId, password } = req.body;
-    if (!fullName || !email || !password) {
-      res.status(400).json({ success: false, message: 'الاسم والبريد وكلمة المرور مطلوبة' });
+    if (!fullName || !email || !password || !roleId) {
+      res.status(400).json({ success: false, message: 'الاسم والبريد وكلمة المرور والدور مطلوبة' });
       return;
     }
     const exists = await prisma.user.findUnique({ where: { email } });
@@ -33,7 +33,7 @@ export const createUser = async (req: AuthRequest, res: Response): Promise<void>
 
     const hash = await bcrypt.hash(password, 12);
     const user = await prisma.user.create({
-      data: { fullName, email, phone: phone || null, password: hash, roleId: Number(roleId) || 5, isActive: true },
+      data: { fullName, email, phone: phone || null, password: hash, roleId: Number(roleId), isActive: true },
       select: { id: true, fullName: true, email: true, role: { select: { name: true, slug: true } } },
     });
     res.status(201).json({ success: true, message: 'تم إنشاء المستخدم بنجاح', data: user });

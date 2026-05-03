@@ -26,7 +26,7 @@ export const tasksService = {
 export const applicationsService = {
   ...crudService('/applications'),
   updateStatus: (id: number, status: string, notes?: string) =>
-    api.patch(`/applications/${id}/status`, { status, adminNotes: notes }).then((r) => r.data),
+    api.patch(`/applications/${id}/review`, { status, reviewNotes: notes }).then((r) => r.data),
 };
 export const rolesService = crudService('/roles');
 export const permissionsService = crudService('/permissions');

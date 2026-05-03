@@ -1,20 +1,49 @@
 import { Router, Request, Response } from 'express';
+import prisma from '../config/database';
 
 const router = Router();
 
-// معالجة الـ Webhooks القادمة من Stripe حين تنجح عملية الدفع فعلياً
-router.post('/stripe', (req: Request, res: Response) => {
-  const event = req.body;
-  
-  console.log('Webhook Received:', event.type);
-  
-  if (event.type === 'payment_intent.succeeded') {
-    const paymentIntent = event.data.object;
-    console.log('Payment Succeeded for amount:', paymentIntent.amount);
-    // هنا تقوم بتحديث حالة جدول Donations في الداتا بيس لتصبح "completed"
+// Stripe webhook — update donation status when payment succeeds
+router.post('/stripe', async (req: Request, res: Response) => {
+  try {
+    const event = req.body;
+
+    if (event.type === 'payment_intent.succeeded') {
+      const paymentIntent = event.data.object;
+      const receiptNumber = paymentIntent.metadata?.receiptNumber;
+
+      if (receiptNumber) {
+        const donation = await prisma.donation.findFirst({
+          where: { receiptNumber, status: 'pending' },
+        });
+
+        if (donation) {
+          await prisma.$transaction(async (tx) => {
+            await tx.donation.update({
+              where: { id: donation.id },
+              data: { status: 'completed' },
+            });
+
+            await tx.donor.update({
+              where: { id: donation.donorId },
+              data: { totalDonated: { increment: donation.amount } },
+            });
+
+            if (donation.projectId) {
+              await tx.project.update({
+                where: { id: donation.projectId },
+                data: { currentAmount: { increment: donation.amount } },
+              });
+            }
+          });
+        }
+      }
+    }
+
+    res.json({ received: true });
+  } catch (err) {
+    res.status(400).json({ error: 'Webhook processing failed' });
   }
-  
-  res.json({ received: true });
 });
 
 export default router;

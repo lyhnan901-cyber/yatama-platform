@@ -24,6 +24,7 @@ import cmsRoutes          from './routes/cms.routes';
 import contactRoutes      from './routes/contact.routes';
 import rolesRoutes        from './routes/roles.routes';
 import permissionsRoutes  from './routes/permissions.routes';
+import webhooksRoutes     from './routes/webhooks.routes';
 import { globalLimiter }  from './middleware/rate-limit.middleware';
 
 const app = express();
@@ -48,6 +49,11 @@ app.use(cors({
 }));
 
 app.use(globalLimiter);
+
+// Webhook routes need raw body — mount before express.json()
+const WPREFIX = process.env.API_PREFIX || '/api/v1';
+app.use(`${WPREFIX}/webhooks`, express.raw({ type: 'application/json' }), webhooksRoutes);
+
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 

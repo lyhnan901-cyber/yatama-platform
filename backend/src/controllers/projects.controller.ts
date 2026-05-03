@@ -190,14 +190,22 @@ export const deleteProject = async (req: AuthRequest, res: Response): Promise<vo
       return;
     }
 
-    // التحقق من عدم وجود تبرعات مكتملة
-    const donationsCount = await prisma.donation.count({
-      where: { projectId: Number(id), status: 'completed' },
-    });
-    if (donationsCount > 0) {
+    // التحقق من عدم وجود سجلات مرتبطة
+    const [donationsCount, tasksCount, transactionsCount] = await Promise.all([
+      prisma.donation.count({ where: { projectId: Number(id) } }),
+      prisma.task.count({ where: { projectId: Number(id) } }),
+      prisma.financialTransaction.count({ where: { projectId: Number(id) } }),
+    ]);
+
+    const related: string[] = [];
+    if (donationsCount > 0) related.push(`${donationsCount} تبرع`);
+    if (tasksCount > 0) related.push(`${tasksCount} مهمة`);
+    if (transactionsCount > 0) related.push(`${transactionsCount} معاملة مالية`);
+
+    if (related.length > 0) {
       res.status(400).json({
         success: false,
-        message: `لا يمكن حذف المشروع — يوجد ${donationsCount} تبرع مرتبط به`,
+        message: `لا يمكن حذف المشروع — يوجد ${related.join(' و ')} مرتبطة به`,
       });
       return;
     }
