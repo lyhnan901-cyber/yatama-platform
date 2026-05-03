@@ -13,7 +13,11 @@ router.post('/stripe', async (req: Request, res: Response) => {
   let event: Stripe.Event;
 
   try {
-    if (webhookSecret && sig) {
+    if (webhookSecret) {
+      if (!sig) {
+        res.status(400).json({ error: 'Missing stripe-signature header' });
+        return;
+      }
       event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
     } else {
       // Fallback for development without signature verification
