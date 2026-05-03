@@ -35,30 +35,31 @@ router.post('/stripe', async (req: Request, res: Response) => {
       const receiptNumber = paymentIntent.metadata?.receiptNumber;
 
       if (receiptNumber) {
-        const donation = await prisma.donation.findFirst({
-          where: { receiptNumber, status: 'pending' },
-        });
-
-        if (donation) {
-          await prisma.$transaction(async (tx) => {
-            await tx.donation.update({
-              where: { id: donation.id },
-              data: { status: 'completed' },
-            });
-
-            await tx.donor.update({
-              where: { id: donation.donorId },
-              data: { totalDonated: { increment: donation.amount } },
-            });
-
-            if (donation.projectId) {
-              await tx.project.update({
-                where: { id: donation.projectId },
-                data: { currentAmount: { increment: donation.amount } },
-              });
-            }
+        await prisma.$transaction(async (tx) => {
+          const updated = await tx.donation.updateMany({
+            where: { receiptNumber, status: 'pending' },
+            data: { status: 'completed' },
           });
-        }
+
+          if (updated.count === 0) return;
+
+          const donation = await tx.donation.findFirst({
+            where: { receiptNumber, status: 'completed' },
+          });
+          if (!donation) return;
+
+          await tx.donor.update({
+            where: { id: donation.donorId },
+            data: { totalDonated: { increment: donation.amount } },
+          });
+
+          if (donation.projectId) {
+            await tx.project.update({
+              where: { id: donation.projectId },
+              data: { currentAmount: { increment: donation.amount } },
+            });
+          }
+        });
       }
     }
 
